@@ -1,0 +1,25 @@
+meta {
+  name: Add PDF
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://127.0.0.1:8080/pdf
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "filename": "Tes insert tanpa upload.",
+    "file_size": 100,
+    "title": "PDF Palsu",
+    "page_count": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

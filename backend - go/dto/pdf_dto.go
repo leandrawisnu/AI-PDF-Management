@@ -2,10 +2,6 @@ package dto
 
 import "time"
 
-type PDFUploadRequest struct {
-	Title string `json:"title" binding:"required" validate:"min=1,max=255"`
-}
-
 type PDFCreateRequest struct {
 	Filename  string `json:"filename" binding:"required"`
 	FileSize  int64  `json:"file_size" binding:"required"`

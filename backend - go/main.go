@@ -312,11 +312,16 @@ func main() {
 		sortBy := c.Query("sort", "created_at")
 		order := c.Query("order", "desc")
 		search := c.Query("search", "")
+		pdfId := c.QueryInt("pdf", 0)
 
 		query := db.Model(&models.Summaries{})
 
 		if search != "" {
 			query = query.Where("content ILIKE ?", "%"+search+"%")
+		}
+
+		if pdfId != 0 {
+			query = query.Where("pdf_id = ?", pdfId)
 		}
 
 		// Get total count for pagination

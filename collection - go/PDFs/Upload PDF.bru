@@ -1,17 +1,17 @@
 meta {
   name: Upload PDF
   type: http
-  seq: 6
+  seq: 3
 }
 
 post {
-  url: http://127.0.0.1:8080/pdf
+  url: http://127.0.0.1:8080/pdf/upload
   body: multipartForm
   auth: inherit
 }
 
 body:multipart-form {
-  file: @file(D:\Downloads\Documents\bootstrap_landingpage (1).pdf)
+  file: @file(D:\Downloads\Documents\15. MODUL DDK 15 - DASAR JAVA SCRIPT.pdf)
 }
 
 settings {

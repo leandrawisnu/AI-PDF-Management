@@ -1,7 +1,7 @@
 meta {
-  name: Get Summary
+  name: Generate Summary by PDF ID
   type: http
-  seq: 8
+  seq: 3
 }
 
 post {
@@ -11,7 +11,7 @@ post {
 }
 
 params:path {
-  id: 1
+  id: 4
 }
 
 body:json {
@@ -22,7 +22,7 @@ body:json {
 }
 
 body:multipart-form {
-  Style: detailed
+  Style: short
   Language: indonesian
 }
 
