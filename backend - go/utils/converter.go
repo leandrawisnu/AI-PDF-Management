@@ -48,7 +48,7 @@ func ConvertPDFToDetailResponse(pdf models.PDF) dto.PDFDetailResponse {
 
 // ConvertSummaryToResponse converts Summary model to SummaryResponse DTO
 func ConvertSummaryToResponse(summary models.Summaries) dto.SummaryResponse {
-	return dto.SummaryResponse{
+	response := dto.SummaryResponse{
 		ID:          summary.ID,
 		Style:       summary.Style,
 		Content:     summary.Content,
@@ -58,6 +58,19 @@ func ConvertSummaryToResponse(summary models.Summaries) dto.SummaryResponse {
 		CreatedAt:   summary.CreatedAt,
 		UpdatedAt:   summary.UpdatedAt,
 	}
+
+	// Include PDF basic info if available
+	if summary.PDF.ID != 0 {
+		response.PDF = &dto.PDFBasicInfo{
+			ID:        summary.PDF.ID,
+			Title:     summary.PDF.Title,
+			Filename:  summary.PDF.Filename,
+			FileSize:  summary.PDF.FileSize,
+			PageCount: summary.PDF.PageCount,
+		}
+	}
+
+	return response
 }
 
 func ConvertSummariesToResponse(summaries []models.Summaries) []dto.SummaryResponse {

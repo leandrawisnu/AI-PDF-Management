@@ -11,4 +11,5 @@ type Summaries struct {
 	PDFID       uint    `gorm:"not null"`
 	Language    string  `gorm:"not null"`
 	SummaryTime float64 `gorm:"not null"`
+	PDF         PDF     `gorm:"foreignKey:PDFID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
