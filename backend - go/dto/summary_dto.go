@@ -1,0 +1,64 @@
+package dto
+
+import "time"
+
+type SummarizeRequest struct {
+	Style    string `json:"style" binding:"required"`
+	Language string `json:"language" binding:"required"`
+}
+
+type SummaryCreateRequest struct {
+	Style       string  `json:"style" binding:"required"`
+	Content     string  `json:"content" binding:"required"`
+	PDFID       uint    `json:"pdf_id" binding:"required"`
+	Language    string  `json:"language" binding:"required"`
+	SummaryTime float64 `json:"summary_time"`
+}
+
+type SummaryResponse struct {
+	ID          uint      `json:"id"`
+	Style       string    `json:"style"`
+	Content     string    `json:"content"`
+	PDFID       uint      `json:"pdf_id"`
+	Language    string    `json:"language"`
+	SummaryTime float64   `json:"summary_time"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type SummaryListResponse struct {
+	Data         []SummaryResponse `json:"data"`
+	Page         int               `json:"page"`
+	ItemsPerPage int               `json:"itemsPerPage"`
+	TotalPages   int               `json:"totalPages"`
+	TotalItems   int64             `json:"totalItems"`
+}
+
+type PythonSummaryResponse struct {
+	Title       string                 `json:"title"`
+	Summary     SummaryDetails         `json:"summary"`
+	Language    string                 `json:"language"`
+	Style       string                 `json:"style"`
+	FileInfo    FileInfo               `json:"file_info"`
+	TextStats   map[string]interface{} `json:"text_statistics"`
+	ProcessInfo ProcessingInfo         `json:"processing_info"`
+	Status      string                 `json:"status"`
+}
+
+type SummaryDetails struct {
+	MainSummary string `json:"main_summary"`
+	WordCount   int    `json:"word_count"`
+	ReadingTime string `json:"reading_time"`
+}
+
+type FileInfo struct {
+	OriginalFilename string  `json:"original_filename"`
+	FileSize         int     `json:"file_size"`
+	FileSizeMB       float64 `json:"file_size_mb"`
+}
+
+type ProcessingInfo struct {
+	ChunksProcessed       int     `json:"chunks_processed"`
+	ChunkingUsed          bool    `json:"chunking_used"`
+	ProcessingTimeSeconds float64 `json:"processing_time_seconds"`
+}

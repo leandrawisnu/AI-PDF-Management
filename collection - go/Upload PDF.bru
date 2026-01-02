@@ -1,0 +1,20 @@
+meta {
+  name: Upload PDF
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://127.0.0.1:8080/pdf
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file(D:\Downloads\Documents\bootstrap_landingpage (1).pdf)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

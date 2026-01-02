@@ -1,0 +1,32 @@
+meta {
+  name: Get Summary
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://127.0.0.1:8080/pdf/:id/summarize
+  body: multipartForm
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "Style": "short",
+    "Language": "english  "
+  }
+}
+
+body:multipart-form {
+  Style: detailed
+  Language: indonesian
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
