@@ -15,6 +15,7 @@ func ConvertPDFToResponse(pdf models.PDF) dto.PDFResponse {
 		PageCount: pdf.PageCount,
 		CreatedAt: pdf.CreatedAt,
 		UpdatedAt: pdf.UpdatedAt,
+		Summaries: ConvertSummariesToResponse(pdf.Summaries),
 	}
 }
 
@@ -25,25 +26,6 @@ func ConvertPDFsToResponse(pdfs []models.PDF) []dto.PDFResponse {
 		responses[i] = ConvertPDFToResponse(pdf)
 	}
 	return responses
-}
-
-// ConvertPDFToDetailResponse converts PDF model with summaries to PDFDetailResponse DTO
-func ConvertPDFToDetailResponse(pdf models.PDF) dto.PDFDetailResponse {
-	summaries := make([]dto.SummaryResponse, len(pdf.Summaries))
-	for i, summary := range pdf.Summaries {
-		summaries[i] = ConvertSummaryToResponse(summary)
-	}
-
-	return dto.PDFDetailResponse{
-		ID:        pdf.ID,
-		Filename:  pdf.Filename,
-		FileSize:  pdf.FileSize,
-		Title:     pdf.Title,
-		PageCount: pdf.PageCount,
-		CreatedAt: pdf.CreatedAt,
-		UpdatedAt: pdf.UpdatedAt,
-		Summaries: summaries,
-	}
 }
 
 // ConvertSummaryToResponse converts Summary model to SummaryResponse DTO

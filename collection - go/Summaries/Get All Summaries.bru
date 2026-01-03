@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: http://127.0.0.1:8080/summaries?page=1&itemsperpage=10&order=asc
+  url: http://127.0.0.1:8080/summaries?page=1&itemsperpage=10&order=asc&sort=created_at
   body: none
   auth: inherit
 }
@@ -14,6 +14,7 @@ params:query {
   page: 1
   itemsperpage: 10
   order: asc
+  sort: created_at
   ~search: 
   ~pdf: 
 }

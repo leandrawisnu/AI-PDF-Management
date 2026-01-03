@@ -17,6 +17,7 @@ import (
 
 	"github.com/extemporalgenome/npdfpages"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -38,6 +39,14 @@ func main() {
 	app.Use(utils.CORSMiddleware())
 	app.Use(utils.LoggingMiddleware())
 	app.Use(utils.RateLimitMiddleware())
+
+	// Allow origin from localhost:3000
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowCredentials: true,
+	}))
 
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -136,7 +145,7 @@ func main() {
 		// Calculate total pages
 		totalPages := int((totalCount + int64(itemsPerPage) - 1) / int64(itemsPerPage))
 
-		if err := query.Order(fmt.Sprintf("%s %s", sortBy, order)).Limit(limit).Offset(offset).Find(&pdfs).Error; err != nil {
+		if err := query.Preload("Summaries").Order(fmt.Sprintf("%s %s", sortBy, order)).Limit(limit).Offset(offset).Find(&pdfs).Error; err != nil {
 			return c.Status(500).JSON(fiber.Map{
 				"error":   "database_error",
 				"message": "Failed to fetch PDFs",
@@ -150,6 +159,22 @@ func main() {
 			ItemsPerPage: itemsPerPage,
 			TotalPages:   totalPages,
 			TotalItems:   totalCount,
+		}
+
+		return c.Status(200).JSON(response)
+	})
+
+	app.Get("/pdf/count", func(c *fiber.Ctx) error {
+		var count int64
+
+		if err := db.Model(&models.PDF{}).Count(&count).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"message": "Failed to count PDFs: " + err.Error(),
+			})
+		}
+
+		response := dto.PDFCountResponse{
+			Count: count,
 		}
 
 		return c.Status(200).JSON(response)
@@ -192,8 +217,35 @@ func main() {
 			})
 		}
 
-		response := utils.ConvertPDFToDetailResponse(pdf)
+		response := utils.ConvertPDFToResponse(pdf)
 		return c.Status(200).JSON(response)
+	})
+
+	app.Get("/api/:id/download", func(c *fiber.Ctx) error {
+		var pdf models.PDF
+
+		if err := db.First(&pdf, c.Params("id")).Error; err != nil {
+			return c.Status(404).JSON(fiber.Map{
+				"error":   "not_found",
+				"message": "PDF not found",
+			})
+		}
+
+		filePath := filepath.Join("uploads", pdf.Filename)
+
+		// Check if file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			return c.Status(404).JSON(fiber.Map{
+				"error":   "file_not_found",
+				"message": "PDF file not found on server",
+			})
+		}
+
+		// Set appropriate headers for file download
+		c.Set("Content-Type", "application/pdf")
+		c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", pdf.Title+".pdf"))
+
+		return c.SendFile(filePath)
 	})
 
 	app.Delete("/pdf/:id", func(c *fiber.Ctx) error {
@@ -534,6 +586,22 @@ func main() {
 			ItemsPerPage: itemsPerPage,
 			TotalPages:   totalPages,
 			TotalItems:   totalCount,
+		}
+
+		return c.Status(200).JSON(response)
+	})
+
+	app.Get("/summaries/count", func(c *fiber.Ctx) error {
+		var count int64
+
+		if err := db.Model(&models.Summaries{}).Count(&count).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"message": "Failed to count summaries: " + err.Error(),
+			})
+		}
+
+		response := dto.SummaryCountResponse{
+			Count: count,
 		}
 
 		return c.Status(200).JSON(response)

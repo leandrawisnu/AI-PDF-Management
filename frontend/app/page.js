@@ -7,45 +7,19 @@ import {
   Sparkles, 
   Search, 
   ArrowRight,
-  Clock,
   Languages,
   FileCheck,
   Zap
 } from 'lucide-react';
 import { useFileUpload } from '../hooks/useApi';
+import { useStats } from '../hooks/useStats';
 import { pdfApi, summaryApi } from '../lib/api';
 
 export default function HomePage() {
   const [dragActive, setDragActive] = useState(false);
-  const [stats, setStats] = useState({
-    totalDocuments: 0,
-    totalSummaries: 0,
-    languagesSupported: 2
-  });
+  const { totalDocuments, totalSummaries, loading: statsLoading, refreshStats } = useStats();
 
   const { upload, uploading, progress, error: uploadError } = useFileUpload();
-
-  // Fetch stats on component mount
-  useState(() => {
-    const fetchStats = async () => {
-      try {
-        const [pdfResponse, summaryResponse] = await Promise.all([
-          pdfApi.getPDFs({ page: 1, itemsPerPage: 1 }),
-          summaryApi.getSummaries({ page: 1, itemsPerPage: 1 })
-        ]);
-        
-        setStats({
-          totalDocuments: pdfResponse.totalItems || 0,
-          totalSummaries: summaryResponse.totalItems || 0,
-          languagesSupported: 2
-        });
-      } catch (err) {
-        console.error('Failed to fetch stats:', err);
-      }
-    };
-
-    fetchStats();
-  }, []);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -76,8 +50,7 @@ export default function HomePage() {
     try {
       await upload(file);
       // Refresh stats after successful upload
-      const pdfResponse = await pdfApi.getPDFs({ page: 1, itemsPerPage: 1 });
-      setStats(prev => ({ ...prev, totalDocuments: pdfResponse.totalItems || 0 }));
+      refreshStats();
       alert('File uploaded successfully!');
     } catch (err) {
       alert('Upload failed: ' + err.message);
@@ -268,15 +241,19 @@ export default function HomePage() {
         <div className="border border-[#1F2937] rounded-lg p-8 mb-16">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-3xl font-medium text-[#3B82F6] mb-2">{stats.totalDocuments}</div>
+              <div className="text-3xl font-medium text-[#3B82F6] mb-2">
+                {statsLoading ? '...' : totalDocuments}
+              </div>
               <div className="text-[#D1D5DB] font-normal">Documents Processed</div>
             </div>
             <div>
-              <div className="text-3xl font-medium text-[#10B981] mb-2">{stats.totalSummaries}</div>
+              <div className="text-3xl font-medium text-[#10B981] mb-2">
+                {statsLoading ? '...' : totalSummaries}
+              </div>
               <div className="text-[#D1D5DB] font-normal">Summaries Generated</div>
             </div>
             <div>
-              <div className="text-3xl font-medium text-[#F59E0B] mb-2">{stats.languagesSupported}</div>
+              <div className="text-3xl font-medium text-[#F59E0B] mb-2">2</div>
               <div className="text-[#D1D5DB] font-normal">Languages Supported</div>
             </div>
           </div>

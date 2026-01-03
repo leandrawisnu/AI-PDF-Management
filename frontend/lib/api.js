@@ -78,6 +78,22 @@ export const pdfApi = {
     });
     return handleResponse(response);
   },
+
+  // Get PDF count
+  async getPDFCount() {
+    const response = await fetch(`${API_BASE_URL}/pdf/count`);
+    return handleResponse(response);
+  },
+
+  // Download PDF file
+  async downloadPDF(id) {
+    const response = await fetch(`${API_BASE_URL}/api/${id}/download`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Download failed' }));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response;
+  },
 };
 
 // Summary API functions
@@ -125,9 +141,11 @@ export const summaryApi = {
     return handleResponse(response);
   },
 
-  // Get summary statistics
-  async getStats() {
-    const response = await fetch(`${API_BASE_URL}/summaries/stats`);
+
+
+  // Get summary count
+  async getSummaryCount() {
+    const response = await fetch(`${API_BASE_URL}/summaries/count`);
     return handleResponse(response);
   },
 };

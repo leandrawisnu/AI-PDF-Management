@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Upload, 
+import { useRouter } from 'next/navigation';
+import {
+  FileText,
+  Upload,
   Search,
   Filter,
   MoreVertical,
@@ -18,16 +19,16 @@ import {
   List,
   Plus
 } from 'lucide-react';
-import { pdfApi, formatFileSize, formatDate, getStatusColor } from '../../lib/api';
+import { pdfApi, formatFileSize, formatDate } from '../../lib/api';
 import { useFileUpload } from '../../hooks/useApi';
 import SummaryModal from '../../components/SummaryModal';
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [sortBy, setSortBy] = useState('created_at');
   const [order, setOrder] = useState('desc');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [documents, setDocuments] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -62,7 +63,6 @@ export default function DocumentsPage() {
         pages: doc.page_count,
         uploadedAt: doc.created_at,
         summaries: doc.summaries?.length || 0,
-        status: 'processed', // Default status since API doesn't provide this
         thumbnail: null
       })) || [];
 
@@ -118,11 +118,16 @@ export default function DocumentsPage() {
     fetchDocuments({ page: newPage });
   };
 
-  const handleSortChange = (newSortBy) => {
-    const newOrder = sortBy === newSortBy && order === 'desc' ? 'asc' : 'desc';
-    setSortBy(newSortBy);
-    setOrder(newOrder);
+  const handleSortChange = (value) => {
+    if (value === 'desc') {
+      setSortBy('created_at');
+      setOrder('desc');
+    } else if (value === 'asc') {
+      setSortBy('created_at');
+      setOrder('asc');
+    }
   };
+
 
   const handleGenerateSummary = (document) => {
     setSelectedDocument(document);
@@ -133,6 +138,40 @@ export default function DocumentsPage() {
     // Refresh the documents list to update summary count
     fetchDocuments();
     alert('Summary generated successfully!');
+  };
+
+  const handleDownload = async (doc) => {
+    try {
+      const response = await pdfApi.downloadPDF(doc.id);
+
+      // Get the filename from the Content-Disposition header or use a default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `${doc.name}.pdf`;
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      alert('Failed to download document: ' + err.message);
+    }
+  };
+
+  const handleViewDocument = (id) => {
+    router.push(`/documents/${id}`);
   };
 
   return (
@@ -164,10 +203,16 @@ export default function DocumentsPage() {
             <h2 className="text-3xl font-medium text-white mb-2">Documents</h2>
             <p className="text-[#D1D5DB] font-normal">Manage your PDF documents and their AI-generated summaries</p>
           </div>
-          <button className="border border-[#3B82F6] text-[#3B82F6] px-6 py-3 rounded font-normal transition-all duration-200 hover:border-[#2563EB] hover:text-[#2563EB] hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center gap-2">
+          <label className="border border-[#3B82F6] text-[#3B82F6] px-6 py-3 rounded font-normal transition-all duration-200 hover:border-[#2563EB] hover:text-[#2563EB] hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center gap-2">
             <Upload className="w-4 h-4 stroke-1.5" />
             Upload PDF
-          </button>
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+            />
+          </label>
         </div>
 
         {/* Controls Bar */}
@@ -187,46 +232,31 @@ export default function DocumentsPage() {
           {/* Filters */}
           <div className="flex items-center gap-4">
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent border border-[#1F2937] rounded px-4 py-3 text-white focus:border-[#3B82F6] focus:outline-none transition-all duration-200 font-normal"
-            >
-              <option value="all" className="bg-[#0A0A0A]">All Status</option>
-              <option value="processed" className="bg-[#0A0A0A]">Processed</option>
-              <option value="processing" className="bg-[#0A0A0A]">Processing</option>
-              <option value="failed" className="bg-[#0A0A0A]">Failed</option>
-            </select>
-
-            <select
-              value={sortBy}
+              value={order}
               onChange={(e) => handleSortChange(e.target.value)}
               className="bg-transparent border border-[#1F2937] rounded px-4 py-3 text-white focus:border-[#3B82F6] focus:outline-none transition-all duration-200 font-normal"
             >
-              <option value="created_at" className="bg-[#0A0A0A]">Most Recent</option>
-              <option value="title" className="bg-[#0A0A0A]">Name A-Z</option>
-              <option value="file_size" className="bg-[#0A0A0A]">File Size</option>
-              <option value="page_count" className="bg-[#0A0A0A]">Page Count</option>
+              <option value="desc" className="bg-[#0A0A0A]">Newest</option>
+              <option value="asc" className="bg-[#0A0A0A]">Oldest</option>
             </select>
 
             {/* View Mode Toggle */}
             <div className="flex border border-[#1F2937] rounded">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 transition-all duration-200 ${
-                  viewMode === 'grid' 
-                    ? 'text-[#3B82F6] border-r border-[#3B82F6]' 
-                    : 'text-[#9CA3AF] hover:text-white border-r border-[#1F2937]'
-                }`}
+                className={`p-2 transition-all duration-200 ${viewMode === 'grid'
+                  ? 'text-[#3B82F6] border-r border-[#3B82F6]'
+                  : 'text-[#9CA3AF] hover:text-white border-r border-[#1F2937]'
+                  }`}
               >
                 <Grid3X3 className="w-4 h-4 stroke-1.5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 transition-all duration-200 ${
-                  viewMode === 'list' 
-                    ? 'text-[#3B82F6]' 
-                    : 'text-[#9CA3AF] hover:text-white'
-                }`}
+                className={`p-2 transition-all duration-200 ${viewMode === 'list'
+                  ? 'text-[#3B82F6]'
+                  : 'text-[#9CA3AF] hover:text-white'
+                  }`}
               >
                 <List className="w-4 h-4 stroke-1.5" />
               </button>
@@ -249,8 +279,8 @@ export default function DocumentsPage() {
               Uploading... {Math.round(progress)}%
             </div>
             <div className="w-full bg-[#1F2937] rounded-full h-2">
-              <div 
-                className="bg-[#3B82F6] h-2 rounded-full transition-all duration-300" 
+              <div
+                className="bg-[#3B82F6] h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -282,10 +312,10 @@ export default function DocumentsPage() {
             <label className="border border-[#3B82F6] text-[#3B82F6] px-6 py-3 rounded font-normal transition-all duration-200 hover:border-[#2563EB] hover:text-[#2563EB] hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center gap-2 mx-auto cursor-pointer">
               <Plus className="w-4 h-4 stroke-1.5" />
               Upload PDF
-              <input 
-                type="file" 
-                accept=".pdf" 
-                className="hidden" 
+              <input
+                type="file"
+                accept=".pdf"
+                className="hidden"
                 onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
               />
             </label>
@@ -295,9 +325,9 @@ export default function DocumentsPage() {
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className={`border border-[#1F2937] rounded-lg hover:border-[#374151] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group ${
-                  viewMode === 'grid' ? 'p-6' : 'p-4'
-                }`}
+                onClick={() => handleViewDocument(doc.id)}
+                className={`border border-[#1F2937] rounded-lg hover:border-[#374151] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group ${viewMode === 'grid' ? 'p-6' : 'p-4'
+                  }`}
               >
                 {viewMode === 'grid' ? (
                   // Grid View
@@ -307,9 +337,6 @@ export default function DocumentsPage() {
                         <FileText className="w-6 h-6 stroke-1.5" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-xs border ${getStatusColor(doc.status)}`}>
-                          {doc.status}
-                        </span>
                         <button className="text-[#9CA3AF] hover:text-white transition-colors opacity-0 group-hover:opacity-100">
                           <MoreVertical className="w-4 h-4 stroke-1.5" />
                         </button>
@@ -327,22 +354,39 @@ export default function DocumentsPage() {
                       <span>{doc.summaries} summaries</span>
                     </div>
                     <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="flex-1 border border-[#1F2937] text-[#D1D5DB] py-2 px-3 rounded text-sm hover:border-[#3B82F6] hover:text-[#3B82F6] transition-all duration-200 flex items-center justify-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDocument(doc.id);
+                        }}
+                        className="flex-1 border border-[#1F2937] text-[#D1D5DB] py-2 px-3 rounded text-sm hover:border-[#3B82F6] hover:text-[#3B82F6] transition-all duration-200 flex items-center justify-center gap-2"
+                      >
                         <Eye className="w-3 h-3 stroke-1.5" />
                         View
                       </button>
-                      <button 
-                        onClick={() => handleGenerateSummary(doc)}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGenerateSummary(doc);
+                        }}
                         className="border border-[#1F2937] text-[#D1D5DB] p-2 rounded hover:border-[#10B981] hover:text-[#10B981] transition-all duration-200"
                         title="Generate Summary"
                       >
                         <FileCheck className="w-3 h-3 stroke-1.5" />
                       </button>
-                      <button className="border border-[#1F2937] text-[#D1D5DB] p-2 rounded hover:border-[#F59E0B] hover:text-[#F59E0B] transition-all duration-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(doc);
+                        }}
+                        className="border border-[#1F2937] text-[#D1D5DB] p-2 rounded hover:border-[#F59E0B] hover:text-[#F59E0B] transition-all duration-200">
                         <Download className="w-3 h-3 stroke-1.5" />
                       </button>
-                      <button 
-                        onClick={() => handleDelete(doc.id)}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(doc.id);
+                        }}
                         className="border border-[#1F2937] text-[#D1D5DB] p-2 rounded hover:border-[#EF4444] hover:text-[#EF4444] transition-all duration-200"
                       >
                         <Trash2 className="w-3 h-3 stroke-1.5" />
@@ -365,25 +409,40 @@ export default function DocumentsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`px-2 py-1 rounded text-xs border ${getStatusColor(doc.status)}`}>
-                        {doc.status}
-                      </span>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="text-[#D1D5DB] hover:text-[#3B82F6] p-1 transition-colors">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDocument(doc.id);
+                          }}
+                          className="text-[#D1D5DB] hover:text-[#3B82F6] p-1 transition-colors"
+                        >
                           <Eye className="w-4 h-4 stroke-1.5" />
                         </button>
-                        <button 
-                          onClick={() => handleGenerateSummary(doc)}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateSummary(doc);
+                          }}
                           className="text-[#D1D5DB] hover:text-[#10B981] p-1 transition-colors"
                           title="Generate Summary"
                         >
                           <FileCheck className="w-4 h-4 stroke-1.5" />
                         </button>
-                        <button className="text-[#D1D5DB] hover:text-[#F59E0B] p-1 transition-colors">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(doc);
+                          }}
+                          className="text-[#D1D5DB] hover:text-[#F59E0B] p-1 transition-colors"
+                        >
                           <Download className="w-4 h-4 stroke-1.5" />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(doc.id)}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(doc.id);
+                          }}
                           className="text-[#D1D5DB] hover:text-[#EF4444] p-1 transition-colors"
                         >
                           <Trash2 className="w-4 h-4 stroke-1.5" />
@@ -407,34 +466,33 @@ export default function DocumentsPage() {
               Showing {((pagination.page - 1) * pagination.itemsPerPage) + 1} to {Math.min(pagination.page * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} documents
             </div>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={pagination.page <= 1}
                 className="border border-[#1F2937] text-[#D1D5DB] px-3 py-2 rounded hover:border-[#374151] hover:text-white transition-all duration-200 text-sm font-normal disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              
+
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 const pageNum = i + Math.max(1, pagination.page - 2);
                 if (pageNum > pagination.totalPages) return null;
-                
+
                 return (
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`px-3 py-2 rounded text-sm font-normal transition-all duration-200 ${
-                      pageNum === pagination.page
-                        ? 'border border-[#3B82F6] text-[#3B82F6]'
-                        : 'border border-[#1F2937] text-[#D1D5DB] hover:border-[#374151] hover:text-white'
-                    }`}
+                    className={`px-3 py-2 rounded text-sm font-normal transition-all duration-200 ${pageNum === pagination.page
+                      ? 'border border-[#3B82F6] text-[#3B82F6]'
+                      : 'border border-[#1F2937] text-[#D1D5DB] hover:border-[#374151] hover:text-white'
+                      }`}
                   >
                     {pageNum}
                   </button>
                 );
               })}
-              
-              <button 
+
+              <button
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
                 className="border border-[#1F2937] text-[#D1D5DB] px-3 py-2 rounded hover:border-[#374151] hover:text-white transition-all duration-200 text-sm font-normal disabled:opacity-50 disabled:cursor-not-allowed"
