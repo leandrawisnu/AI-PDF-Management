@@ -43,10 +43,10 @@ app = FastAPI(
 # Add CORS middleware to allow frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Next.js default port
+    allow_origins=["http://localhost:8080"], 
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["POST", "GET", "OPTIONS"],  
+    allow_headers=["Content-Type", "Authorization"],  
 )
 
 # Configure the Gemini API

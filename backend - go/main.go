@@ -24,7 +24,10 @@ import (
 )
 
 func main() {
-	dsn := "host=localhost user=postgres password=postgres dbname=ai_pdf_management port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=ai_pdf_management port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -36,17 +39,14 @@ func main() {
 	})
 
 	// Apply middleware
-	app.Use(utils.CORSMiddleware())
-	app.Use(utils.LoggingMiddleware())
-	app.Use(utils.RateLimitMiddleware())
-
-	// Allow origin from localhost:3000
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: true,
 	}))
+	app.Use(utils.LoggingMiddleware())
+	app.Use(utils.RateLimitMiddleware())
 
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -274,7 +274,7 @@ func main() {
 			})
 		}
 
-		db.Delete(&pdf)
+		db.Unscoped().Delete(&pdf)
 
 		return c.Status(200).JSON(fiber.Map{
 			"message": "PDF deleted successfully",
@@ -443,9 +443,14 @@ func main() {
 		writer.WriteField("language", req.Language)
 		writer.Close()
 
+		pythonAPIURL := os.Getenv("PYTHON_API_URL")
+		if pythonAPIURL == "" {
+			pythonAPIURL = "127.0.0.1:8000"
+		}
+
 		httpReq, _ := http.NewRequest(
 			"POST",
-			"http://127.0.0.1:8000/summarize",
+			fmt.Sprintf("http://%s/summarize", pythonAPIURL),
 			body,
 		)
 		httpReq.Header.Set("Content-Type", writer.FormDataContentType())
@@ -639,7 +644,7 @@ func main() {
 			})
 		}
 
-		if err := db.Delete(&summary).Error; err != nil {
+		if err := db.Unscoped().Delete(&summary).Error; err != nil {
 			return c.Status(500).JSON(fiber.Map{
 				"error":   "database_error",
 				"message": "Failed to delete summary",

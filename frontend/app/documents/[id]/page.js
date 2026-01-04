@@ -22,7 +22,7 @@ import SummaryModal from '../../../components/SummaryModal';
 export default function DocumentDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [document, setDocument] = useState(null);
+  const [doc, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
@@ -61,21 +61,21 @@ export default function DocumentDetailPage() {
     }
   }, [params.id]);
 
-  const handleDownload = async () => {
+    const handleDownload = async () => {
     try {
-      const response = await pdfApi.downloadPDF(params.id);
-      
+      const response = await pdfApi.downloadPDF(doc.id);
+
       // Get the filename from the Content-Disposition header or use a default
       const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = document.name + '.pdf';
-      
+      let filename = `${doc.name}.pdf`;
+
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
         if (filenameMatch) {
           filename = filenameMatch[1];
         }
       }
-      
+
       // Create blob and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -248,7 +248,7 @@ export default function DocumentDetailPage() {
           >
             <ArrowLeft className="w-6 h-6 stroke-1.5" />
           </button>
-          <h2 className="text-3xl font-medium text-white">{document.name}</h2>
+          <h2 className="text-3xl font-medium text-white">{doc.name}</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -260,27 +260,27 @@ export default function DocumentDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-[#9CA3AF] block mb-1">File Name</label>
-                  <p className="text-white font-normal">{document.filename}</p>
+                  <p className="text-white font-normal">{doc.filename}</p>
                 </div>
                 <div>
                   <label className="text-sm text-[#9CA3AF] block mb-1">File Size</label>
-                  <p className="text-white font-normal">{document.size}</p>
+                  <p className="text-white font-normal">{doc.size}</p>
                 </div>
                 <div>
                   <label className="text-sm text-[#9CA3AF] block mb-1">Pages</label>
-                  <p className="text-white font-normal">{document.pages} pages</p>
+                  <p className="text-white font-normal">{doc.pages} pages</p>
                 </div>
                 <div>
                   <label className="text-sm text-[#9CA3AF] block mb-1">Summaries</label>
-                  <p className="text-white font-normal">{document.summaries.length} summaries</p>
+                  <p className="text-white font-normal">{doc.summaries.length} summaries</p>
                 </div>
                 <div>
                   <label className="text-sm text-[#9CA3AF] block mb-1">Uploaded</label>
-                  <p className="text-white font-normal">{formatDate(document.uploadedAt)}</p>
+                  <p className="text-white font-normal">{formatDate(doc.uploadedAt)}</p>
                 </div>
                 <div>
                   <label className="text-sm text-[#9CA3AF] block mb-1">Last Modified</label>
-                  <p className="text-white font-normal">{formatDate(document.updatedAt)}</p>
+                  <p className="text-white font-normal">{formatDate(doc.updatedAt)}</p>
                 </div>
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function DocumentDetailPage() {
                 </button>
               </div>
               
-              {document.summaries.length === 0 ? (
+              {doc.summaries.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 border border-[#1F2937] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FileCheck className="w-6 h-6 text-[#9CA3AF] stroke-1.5" />
@@ -315,7 +315,7 @@ export default function DocumentDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {document.summaries.map((summary) => (
+                  {doc.summaries.map((summary) => (
                     <div key={summary.id} className="border border-[#1F2937] rounded-lg p-4 hover:border-[#374151] transition-colors">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -362,10 +362,6 @@ export default function DocumentDetailPage() {
                   <Download className="w-4 h-4 stroke-1.5" />
                   Download PDF
                 </button>
-                <button className="w-full border border-[#1F2937] text-[#D1D5DB] py-3 px-4 rounded hover:border-[#3B82F6] hover:text-[#3B82F6] transition-all duration-200 flex items-center gap-3">
-                  <Eye className="w-4 h-4 stroke-1.5" />
-                  Preview Document
-                </button>
                 <button 
                   onClick={handleGenerateSummary}
                   className="w-full border border-[#1F2937] text-[#D1D5DB] py-3 px-4 rounded hover:border-[#10B981] hover:text-[#10B981] transition-all duration-200 flex items-center gap-3"
@@ -392,28 +388,28 @@ export default function DocumentDetailPage() {
                     <FileIcon className="w-4 h-4 stroke-1.5" />
                     File Size
                   </span>
-                  <span className="text-white font-normal">{document.size}</span>
+                  <span className="text-white font-normal">{doc.size}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#9CA3AF] flex items-center gap-2">
                     <FileText className="w-4 h-4 stroke-1.5" />
                     Pages
                   </span>
-                  <span className="text-white font-normal">{document.pages}</span>
+                  <span className="text-white font-normal">{doc.pages}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#9CA3AF] flex items-center gap-2">
                     <Users className="w-4 h-4 stroke-1.5" />
                     Summaries
                   </span>
-                  <span className="text-white font-normal">{document.summaries.length}</span>
+                  <span className="text-white font-normal">{doc.summaries.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#9CA3AF] flex items-center gap-2">
                     <Calendar className="w-4 h-4 stroke-1.5" />
                     Uploaded
                   </span>
-                  <span className="text-white font-normal">{formatDate(document.uploadedAt)}</span>
+                  <span className="text-white font-normal">{formatDate(doc.uploadedAt)}</span>
                 </div>
               </div>
             </div>
@@ -425,7 +421,7 @@ export default function DocumentDetailPage() {
       <SummaryModal
         isOpen={summaryModalOpen}
         onClose={() => setSummaryModalOpen(false)}
-        document={document}
+        document={doc}
         onSummaryGenerated={handleSummaryGenerated}
       />
     </div>

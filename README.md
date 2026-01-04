@@ -71,6 +71,19 @@ AI PDF Management/
 - Python 3.8+ (for local development)
 - Node.js 18+ (for local development)
 
+### Database Setup Options
+
+You have two options for PostgreSQL:
+
+**Option A: Use included PostgreSQL in Docker Compose (Recommended for development)**
+- PostgreSQL is already configured in docker-compose.yml
+- No additional setup required
+
+**Option B: Use your own PostgreSQL instance**
+1. Remove the `postgres` service from docker-compose.yml
+2. Update the `DATABASE_URL` in backend-go service to point to your PostgreSQL instance
+3. Ensure your PostgreSQL has database: `ai_pdf_management`
+
 ### Environment Setup
 
 1. **Clone the repository**
@@ -88,15 +101,40 @@ AI PDF Management/
 
 3. **Run with Docker Compose**
    ```bash
+   # Option A: With included PostgreSQL
+   docker-compose up -d
+   
+   # Option B: Without PostgreSQL (if using external database)
+   # First remove postgres service from docker-compose.yml
+   # Then update DATABASE_URL in backend-go service
    docker-compose up -d
    ```
 
 ### Manual Setup (Development)
 
 #### Database Setup
+Choose one of these options:
+
+**Option A: Use Docker PostgreSQL (Recommended)**
 ```bash
-cd postgres
-docker-compose up -d
+# PostgreSQL is included in docker-compose.yml
+# Just run: docker-compose up postgres -d
+```
+
+**Option B: Use External PostgreSQL**
+- Install PostgreSQL locally or use existing instance
+- Create database `ai_pdf_management`
+- Ensure credentials: `postgres:postgres` on port 5432
+- Or update DATABASE_URL in docker-compose.yml to match your setup
+
+**Option C: Standalone PostgreSQL Container**
+```bash
+docker run --name postgres-ai-pdf \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=ai_pdf_management \
+  -p 5432:5432 \
+  -d postgres:latest
 ```
 
 #### Go Backend
@@ -205,11 +243,10 @@ GOOGLE_API_KEY=your_gemini_api_key_here
 ```
 
 #### Docker Compose
-- PostgreSQL: `postgres:password@localhost:5432/myapp`
+- **PostgreSQL**: Run separately using Docker or local installation (see setup instructions above)
 - Go Backend: `localhost:8080`
 - Python Backend: `localhost:8000`
 - Frontend: `localhost:3000`
-- Adminer: `localhost:8080` (database admin)
 
 ## 🧪 Testing
 
@@ -242,13 +279,47 @@ Available test cases:
 
 ## 🚀 Deployment
 
-The application is fully containerized and can be deployed using Docker Compose:
+### Quick Start with Docker Compose
 
+**Option A: With included PostgreSQL (Recommended)**
 ```bash
+# Start all services including PostgreSQL
 docker-compose up -d --build
 ```
+
+**Option B: With external PostgreSQL**
+1. **Remove PostgreSQL from docker-compose.yml**
+   ```yaml
+   # Comment out or remove the postgres service section
+   ```
+
+2. **Update backend-go DATABASE_URL**
+   ```yaml
+   environment:
+     - DATABASE_URL=postgres://your_user:your_password@your_host:5432/ai_pdf_management?sslmode=disable
+   ```
+
+3. **Start services**
+   ```bash
+   docker-compose up -d --build
+   ```
 
 Services will be available at:
 - Frontend: http://localhost:3000
 - Go API: http://localhost:8080
 - Python API: http://localhost:8000
+
+### Database Connection Details
+**Default configuration (included PostgreSQL):**
+- Host: `postgres` (container name) or `localhost` (external access)
+- Port: `5432`
+- Database: `ai_pdf_management`
+- Username: `postgres`
+- Password: `postgres`
+
+**For external PostgreSQL:**
+Update the `DATABASE_URL` environment variable in docker-compose.yml:
+```yaml
+environment:
+  - DATABASE_URL=postgres://username:password@host:port/database_name?sslmode=disable
+```

@@ -1,25 +1,19 @@
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (Optional - can be removed if using external PostgreSQL)
   postgres:
-    image: postgres:15-alpine
-    container_name: postgres_db
+    image: postgres:latest
+    container_name: postgres_ai_pdf
     environment:
-      POSTGRES_DB: myapp
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai_pdf_management
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app-network
-    adminer:
-      image: adminer
-      restart: always
-      ports:
-        - 8080:8080
-
+      
   # Go Backend
   backend-go:
     build:
@@ -29,7 +23,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://postgres:password@postgres:5432/myapp?sslmode=disable
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ai_pdf_management?sslmode=disable
       - PYTHON_API_URL=python_backend:8000
     depends_on:
       - postgres
@@ -61,8 +55,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL_GO=http://localhost:8080
-      - NEXT_PUBLIC_API_URL_PYTHON=http://localhost:8000
+      - NEXT_PUBLIC_API_URL_GO=http://backend-go:8080
     depends_on:
       - backend-go
       - backend-python
