@@ -1,7 +1,5 @@
 ![Your Banner Image](https://i.ibb.co.com/mrXZ04xP/aipdfmanagement.jpg)
 
-# AI PDF Management System
-
 A full-stack application for managing PDF documents with AI-powered summarization capabilities using Google Gemini AI.
 
 ## 🏗️ Architecture
